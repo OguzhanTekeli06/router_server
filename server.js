@@ -55,12 +55,26 @@ async function kullanicibilgi(req, res, next) {
     return next();
 }
 
+async function kullanicibilgi2(req, res, next) {
+    try {
+        const { email, password } = req.body; // İstekten e-posta ve şifre bilgilerini al
+        const responses = await io.timeout(2000).emitWithAck("user-login", { email, password }); // tüm istemcilerde login olayını tetikler. her bir istemciden onay bekler.
+        console.log('Received responses:', responses);
+    } catch (error) {
+        console.error('Error or timeout:', error);
+    }
+    res.send({ value: req.body });
+    return next();
+}
+
 server.post("/login", function (req, res, next) {
     return kullanicibilgi(req, res, next);
     
   });
 
-
+server.post("/user-login", function (req, res, next) {
+    return kullanicibilgi2(req, res, next);
+});
 
 // serve client-side socket.io script
 server.get('/socket.io.js', restify.plugins.serveStatic({
