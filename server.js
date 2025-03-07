@@ -55,24 +55,13 @@ async function kullanicibilgi(req, res, next) {
     return next();
 }
 
-async function kullanicibilgi2(req, res, next) {
-    try {
-        const { email, password } = req.body; // İstekten e-posta ve şifre bilgilerini al
-        const responses = await io.timeout(2000).emitWithAck("user-login", { email, password }); // tüm istemcilerde login olayını tetikler. her bir istemciden onay bekler.
-        console.log('Received responses:', responses);
-    } catch (error) {
-        console.error('Error or timeout:', error);
-    }
-    res.send({ value: req.body });
-    return next();
-}
 
 
 
 async function changePassword(req, res, next) {
     try {
-        const { token, newPassword, oldPassword } = req.body; // İstekten token, yeni şifre ve eski şifre bilgilerini al
-        const responses = await io.timeout(2000).emitWithAck("change-password", { token, newPassword, oldPassword }); // tüm istemcilerde change-password olayını tetikler. her bir istemciden onay bekler.
+        const { token, newPassword, oldPassword } = req.body;
+        const responses = await io.timeout(2000).emitWithAck("change-password", { token, newPassword, oldPassword });
         console.log('Received responses:', responses);
     } catch (error) {
         console.error('Error or timeout:', error);
@@ -81,17 +70,7 @@ async function changePassword(req, res, next) {
     return next();
 }
 
-async function changeUserPassword(req, res, next) {
-    try {
-        const { token, newPassword, oldPassword } = req.body; // İstekten token, yeni şifre ve eski şifre bilgilerini al
-        const responses = await io.timeout(2000).emitWithAck("change-user-password", { token, newPassword, oldPassword }); // tüm istemcilerde change-user-password olayını tetikler. her bir istemciden onay bekler.
-        console.log('Received responses:', responses);
-    } catch (error) {
-        console.error('Error or timeout:', error);
-    }
-    res.send({ value: req.body });
-    return next();
-}
+ 
 
 
 
@@ -103,20 +82,12 @@ server.post("/login", function (req, res, next) {
     
   });
 
-server.post("/user-login", function (req, res, next) {
-    return kullanicibilgi2(req, res, next);
-});
-
-
 
 
 server.post("/change-password", function (req, res, next) {
     return changePassword(req, res, next);
 });
 
-server.post("/change-user-password", function (req, res, next) {
-    return changeUserPassword(req, res, next);
-});
 
 
 
