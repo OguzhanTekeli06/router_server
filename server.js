@@ -70,7 +70,18 @@ async function changePassword(req, res, next) {
     return next();
 }
 
- 
+async function logout(req, res, next) {
+    try {
+        const { authorization } = req.headers;
+        const refreshToken = authorization && authorization.split(' ')[1];
+        const responses = await io.timeout(2000).emitWithAck("logout", { authorization });
+        console.log('Received responses:', responses);
+    } catch (error) {
+        console.error('Error or timeout:', error);
+    }
+    res.send({ value: req.body });
+    return next();
+}
 
 
 
@@ -89,7 +100,9 @@ server.post("/change-password", function (req, res, next) {
 });
 
 
-
+server.post("/logout", function (req, res, next) {
+    return logout(req, res, next);
+});
 
 
 
