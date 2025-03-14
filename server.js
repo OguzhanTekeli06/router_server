@@ -48,6 +48,11 @@ async function kullanicibilgi(req, res, next) {
         const { email, password } = req.body; // İstekten e-posta ve şifre bilgilerini al
         const responses = await io.timeout(2000).emitWithAck("login", { email, password }); // tüm istemcilerde login olayını tetikler. her bir istemciden onay bekler.
         console.log('Received responses:', responses);
+        res.json({
+            success: true,
+            data: responses
+        });
+
     } catch (error) {
         console.error('Error or timeout:', error);
     }
@@ -60,13 +65,21 @@ async function kullanicibilgi(req, res, next) {
 
 async function changePassword(req, res, next) {
     try {
-        const { token, newPassword, oldPassword } = req.body;
+        const token = req.headers.authorization?.split(" ")[1];
+        const { newPassword, oldPassword } = req.body;
         const responses = await io.timeout(2000).emitWithAck("change-password", { token, newPassword, oldPassword });
         console.log('Received responses:', responses);
+        res.json({
+            success: true,
+            data: responses
+        });
     } catch (error) {
         console.error('Error or timeout:', error);
+        res.json({
+            success: false,
+            message: "Error or timeout: " + error
+        });
     }
-    res.send({ value: req.body });
     return next();
 }
 
@@ -75,6 +88,95 @@ async function logout(req, res, next) {
         const { authorization } = req.headers;
         const refreshToken = authorization && authorization.split(' ')[1];
         const responses = await io.timeout(2000).emitWithAck("logout", { authorization });
+        console.log('Received responses:', responses);
+    } catch (error) {
+        console.error('Error or timeout:', error);
+    }
+    res.send({ value: req.body });
+    return next();
+}
+
+
+// Leave işlemleri
+async function leaveAdd(req, res, next) {
+       try {
+        const { internId, start, end } = req.body;
+        const responses = await io.timeout(20000).emitWithAck("leave:add", { internId, start, end });
+        console.log('Received responses:', responses);
+        res.json({
+            success: true,
+            message: "İzin talebi başarıyla eklendi.",
+            data: responses
+        });
+    } catch (error) {
+        console.error('Error or timeout:', error);
+        res.json({
+            success: false,
+            message: "İzin talebi eklenemedi: " + error
+        });
+    }
+    return next();
+}
+
+async function leaveGetAll(req, res, next) {
+    try {
+        const responses = await io.timeout(2000).emitWithAck("leave:getAll");
+        console.log('Received responses:', responses);
+    } catch (error) {
+        console.error('Error or timeout:', error);
+    }
+    res.send({ value: req.body });
+    return next();
+}
+
+async function leaveGetAllFromIntern(req, res, next) {
+    try {
+        const { id } = req.params;
+        const responses = await io.timeout(2000).emitWithAck("leave:getAllFromIntern", { id });
+        console.log('Received responses:', responses);
+    } catch (error) {
+        console.error('Error or timeout:', error);
+    }
+    res.send({ value: req.body });
+    return next();
+}
+
+async function leaveGetAllForMentor(req, res, next) {
+    try {
+        const { id } = req.params;
+        const responses = await io.timeout(2000).emitWithAck("leave:getAllForMentor", { id });
+        console.log('Received responses:', JSON.stringify(responses, null, 2));
+        res.json({
+            success: true,
+            data: responses
+        });
+    } catch (error) {
+        console.error('Error or timeout:', error);
+        res.json({
+            success: false,
+            message: "Error or timeout: " + error
+        });
+    }
+    return next();
+}
+
+async function leaveUpdate(req, res, next) {
+    try {
+        const { id } = req.params;
+        const updates = req.body;
+        const responses = await io.timeout(2000).emitWithAck("leave:update", { id, updates });
+        console.log('Received responses:', responses);
+    } catch (error) {
+        console.error('Error or timeout:', error);
+    }
+    res.send({ value: req.body });
+    return next();
+}
+
+async function leaveDelete(req, res, next) {
+    try {
+        const { id } = req.params;
+        const responses = await io.timeout(2000).emitWithAck("leave:delete", { id });
         console.log('Received responses:', responses);
     } catch (error) {
         console.error('Error or timeout:', error);
@@ -105,6 +207,29 @@ server.post("/logout", function (req, res, next) {
 });
 
 
+server.post("/leave/add", function (req, res, next) {
+    return leaveAdd(req, res, next);
+});
+
+server.get("/leave/getAll", function (req, res, next) {
+    return leaveGetAll(req, res, next);
+});
+
+server.get("/leave/getAllFromIntern/:id", function (req, res, next) {
+    return leaveGetAllFromIntern(req, res, next);
+});
+
+server.get("/leave/getAllForMentor/:id", function (req, res, next) {
+    return leaveGetAllForMentor(req, res, next);
+});
+
+server.put("/leave/update/:id", function (req, res, next) {
+    return leaveUpdate(req, res, next);
+});
+
+server.put("/leave/delete/:id", function (req, res, next) {
+    return leaveDelete(req, res, next);
+});
 
 
 
