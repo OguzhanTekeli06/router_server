@@ -99,7 +99,7 @@ async function logout(req, res, next) {
 
 // Leave işlemleri
 async function leaveAdd(req, res, next) {
-       try {
+    try {
         const { internId, start, end } = req.body;
         const responses = await io.timeout(20000).emitWithAck("leave:add", { internId, start, end });
         console.log('Received responses:', responses);
@@ -186,14 +186,51 @@ async function leaveDelete(req, res, next) {
 }
 
 
+// Mentor interns by term işlemleri
+async function mentorInternsByTerm(req, res, next) {
+    try {
+        const { id } = req.params;
+        const { internshipId } = req.query;
+        const responses = await io.timeout(2000).emitWithAck("mentorConnection:getFiltered", { id, internshipId });
+        console.log('Received responses:', JSON.stringify(responses, null, 2));
+        res.json({
+            success: true,
+            data: responses
+        });
+    } catch (error) {
+        console.error('Error or timeout:', error);
+        res.json({
+            success: false,
+            message: "Error or timeout: " + error
+        });
+    }
+    return next();
+}
 
 
+async function internshipGetAll(req, res, next) {
+    try {
+        const responses = await io.timeout(2000).emitWithAck("internship:getAll");
+        console.log('Received responses:', JSON.stringify(responses, null, 2));
+        res.json({
+            success: true,
+            data: responses
+        });
+    } catch (error) {
+        console.error('Error or timeout:', error);
+        res.json({
+            success: false,
+            message: "Error or timeout: " + error
+        });
+    }
+    return next();
+}
 
 
 server.post("/login", function (req, res, next) {
     return kullanicibilgi(req, res, next);
-    
-  });
+
+});
 
 
 
@@ -232,13 +269,21 @@ server.put("/leave/delete/:id", function (req, res, next) {
 });
 
 
+server.get("/mentorInternsByTerm/:id", function (req, res, next) {
+     return mentorInternsByTerm(req, res, next); 
+});
+
+
+server.get("/internship/getAll", function (req, res, next) {
+    return internshipGetAll(req, res, next);
+});
 
 
 // serve client-side socket.io script
 server.get('/socket.io.js', restify.plugins.serveStatic({
     directory: path.join(__dirname, 'node_modules', 'socket.io', 'client-dist'),
     file: 'socket.io.min.js'
-  }));
+}));
 
 server.get('/', function indexHTML(req, res, next) {
     fs.readFile(__dirname + '/public/index.html', function (err, data) {
@@ -267,7 +312,7 @@ io.sockets.on("connect", socket => {
     clientsOnline.add(socket);
     io.emit("clients-online", clientsOnline.size);
 
-    
+
     socket.on('message', (msg) => {
         console.log('Message received:', msg);
     });
