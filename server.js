@@ -43,7 +43,7 @@ server.use(restify.plugins.bodyParser());
 //     return next();
 // }
 
-async function kullanicibilgi(req, res, next) {
+async function login(req, res, next) {
     try {
         const { email, password } = req.body; // İstekten e-posta ve şifre bilgilerini al
         const responses = await io.timeout(2000).emitWithAck("login", { email, password }); // tüm istemcilerde login olayını tetikler. her bir istemciden onay bekler.
@@ -100,8 +100,9 @@ async function logout(req, res, next) {
 // Leave işlemleri
 async function leaveAdd(req, res, next) {
     try {
-        const { internId, start, end } = req.body;
-        const responses = await io.timeout(20000).emitWithAck("leave:add", { internId, start, end });
+        const { internId, start, end, description } = req.body;
+        const responses = await io.timeout(20000).emitWithAck("leave:add", { internId, start, end, description });
+
         console.log('Received responses:', responses);
         res.json({
             success: true,
@@ -112,7 +113,7 @@ async function leaveAdd(req, res, next) {
         console.error('Error or timeout:', error);
         res.json({
             success: false,
-            message: "İzin talebi eklenemedi: " + error
+            message: "İzin talebi eklenemedi: " + error.message // Hata mesajı daha açıklayıcı hale getirildi
         });
     }
     return next();
@@ -121,11 +122,20 @@ async function leaveAdd(req, res, next) {
 async function leaveGetAll(req, res, next) {
     try {
         const responses = await io.timeout(2000).emitWithAck("leave:getAll");
+
         console.log('Received responses:', responses);
+        res.json({
+            success: true,
+            message: "Tüm izin talepleri başarıyla getirildi.",
+            data: responses // Data başarıyla döndürülüyor
+        });
     } catch (error) {
         console.error('Error or timeout:', error);
+        res.json({
+            success: false,
+            message: "İzin talepleri getirilemedi: " + error.message // Hata mesajı eklendi
+        });
     }
-    res.send({ value: req.body });
     return next();
 }
 
@@ -133,11 +143,20 @@ async function leaveGetAllFromIntern(req, res, next) {
     try {
         const { id } = req.params;
         const responses = await io.timeout(2000).emitWithAck("leave:getAllFromIntern", { id });
+
         console.log('Received responses:', responses);
+        res.json({
+            success: true,
+            message: "Stajyerin izin talepleri başarıyla getirildi.",
+            data: responses // Data stajyer izin taleplerine göre döndürülüyor
+        });
     } catch (error) {
         console.error('Error or timeout:', error);
+        res.json({
+            success: false,
+            message: "Stajyerin izin talepleri getirilemedi: " + error.message // Hata mesajı eklendi
+        });
     }
-    res.send({ value: req.body });
     return next();
 }
 
@@ -145,16 +164,18 @@ async function leaveGetAllForMentor(req, res, next) {
     try {
         const { id } = req.params;
         const responses = await io.timeout(2000).emitWithAck("leave:getAllForMentor", { id });
+
         console.log('Received responses:', JSON.stringify(responses, null, 2));
         res.json({
             success: true,
-            data: responses
+            message: "Mentörün öğrencilerine ait izin talepleri başarıyla getirildi.",
+            data: responses // Mentör verileri başarıyla döndürülüyor
         });
     } catch (error) {
         console.error('Error or timeout:', error);
         res.json({
             success: false,
-            message: "Error or timeout: " + error
+            message: "Mentör verileri getirilemedi: " + error.message // Hata mesajı eklendi
         });
     }
     return next();
@@ -165,11 +186,20 @@ async function leaveUpdate(req, res, next) {
         const { id } = req.params;
         const updates = req.body;
         const responses = await io.timeout(2000).emitWithAck("leave:update", { id, updates });
+
         console.log('Received responses:', responses);
+        res.json({
+            success: true,
+            message: "İzin talebi başarıyla güncellendi.",
+            data: responses // Güncellenmiş veriler döndürülüyor
+        });
     } catch (error) {
         console.error('Error or timeout:', error);
+        res.json({
+            success: false,
+            message: "İzin talebi güncellenemedi: " + error.message // Hata mesajı eklendi
+        });
     }
-    res.send({ value: req.body });
     return next();
 }
 
@@ -177,11 +207,20 @@ async function leaveDelete(req, res, next) {
     try {
         const { id } = req.params;
         const responses = await io.timeout(2000).emitWithAck("leave:delete", { id });
+
         console.log('Received responses:', responses);
+        res.json({
+            success: true,
+            message: "İzin talebi başarıyla silindi.",
+            data: responses // Silme işlemine ait bilgiler döndürülüyor
+        });
     } catch (error) {
         console.error('Error or timeout:', error);
+        res.json({
+            success: false,
+            message: "İzin talebi silinemedi: " + error.message // Hata mesajı eklendi
+        });
     }
-    res.send({ value: req.body });
     return next();
 }
 
@@ -210,7 +249,7 @@ async function mentorInternsByTerm(req, res, next) {
 
 async function internshipGetAll(req, res, next) {
     try {
-        const responses = await io.timeout(2000).emitWithAck("internship:getAll");
+        const responses = await io.timeout(2000000).emitWithAck("internship:getAll");
         console.log('Received responses:', JSON.stringify(responses, null, 2));
         res.json({
             success: true,
@@ -220,7 +259,8 @@ async function internshipGetAll(req, res, next) {
         console.error('Error or timeout:', error);
         res.json({
             success: false,
-            message: "Error or timeout: " + error
+            message: "Error or timeout: " + error,
+            error : error
         });
     }
     return next();
@@ -228,7 +268,7 @@ async function internshipGetAll(req, res, next) {
 
 
 server.post("/login", function (req, res, next) {
-    return kullanicibilgi(req, res, next);
+    return login(req, res, next);
 
 });
 
