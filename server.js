@@ -32,16 +32,6 @@ const clientsOnline = new Set();
 server.use(restify.plugins.bodyParser());
 
 
-// async function random(req, res, next) { // burda üretileni socket.io ya gönder ve orda console a yazdır
-//     try {
-//         const responses = await io.timeout(2000).emitWithAck("login");
-//         console.log('Received responses:', responses);
-//     } catch (error) {
-//         console.error('Error or timeout:', error);
-//     }
-//    res.send({ value: req.body });    
-//     return next();
-// }
 
 async function login(req, res, next) {
     try {
@@ -119,24 +109,26 @@ async function leaveAdd(req, res, next) {
     return next();
 }
 
-async function leaveGetAll(req, res, next) {
+async function leaveGetAll(req, res) {
     try {
+        // Emit ile 'leave:getAll' olayını tetikleyip, cevap bekliyoruz
         const responses = await io.timeout(2000).emitWithAck("leave:getAll");
 
+        // Gelen yanıtları kontrol ediyor ve yanıtı döndürüyoruz
         console.log('Received responses:', responses);
-        res.json({
+        return res.status(200).json({
             success: true,
             message: "Tüm izin talepleri başarıyla getirildi.",
             data: responses // Data başarıyla döndürülüyor
         });
     } catch (error) {
+        // Eğer hata oluşursa, burada loglanıyor ve istemciye hata mesajı gönderiliyor
         console.error('Error or timeout:', error);
-        res.json({
+        return res.status(500).json({
             success: false,
-            message: "İzin talepleri getirilemedi: " + error.message // Hata mesajı eklendi
+            message: "İzin talepleri getirilemedi: " + error.message
         });
     }
-    return next();
 }
 
 async function leaveGetAllFromIntern(req, res, next) {
